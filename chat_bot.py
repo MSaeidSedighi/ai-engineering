@@ -23,8 +23,8 @@ def bot(message, memory=[]):
         print("bot message failed. retrying...")
         bot(message, memory)
 
-def chat():
-    memory = []
+def chat(system_prompt):
+    memory = [{'role': 'system', 'content': system_prompt}]
     print("Welcome to the chat bot! Type 'q' to terminate the chat.")
     while True:
         user_input = input("Enter your message: ").strip().lower()
@@ -39,7 +39,8 @@ def chat():
         memory.append({"role": "assistant", "content": bot_response})
 
 def main():
-    chat()
+    system_prompt = "You are a helpful assistant. Your name is Abbas. Give short and concise answers. If you don't know the answer, say 'I don't know'."
+    chat(system_prompt)
 
 if __name__ == "__main__":
     main()
