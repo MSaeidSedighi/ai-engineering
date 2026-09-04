@@ -9,21 +9,22 @@ llm = OpenAI(
     base_url="http://localhost:20128/v1"
 )
 
-def bot(message):
+def bot(message, memory=[]):
     response = llm.chat.completions.create(
         model="ai-engineering",
-        messages=[{"role": "user", "content": message}],
+        messages=memory + [{"role": "user", "content": message}],
         temperature=0.7,
-        max_tokens=150,
+        max_tokens=2000
     )
 
     try: 
         return response.choices[0].message.content
     except:
         print("bot message failed. retrying...")
-        bot(message)
+        bot(message, memory)
 
 def chat():
+    memory = []
     print("Welcome to the chat bot! Type 'q' to terminate the chat.")
     while True:
         user_input = input("Enter your message: ").strip().lower()
@@ -32,7 +33,10 @@ def chat():
             print("Terminating the chat bot. Goodbye!")
             break
 
-        print(bot(user_input))
+        bot_response = bot(user_input, memory)
+        print(bot_response)
+        memory.append({"role": "user", "content": user_input})
+        memory.append({"role": "assistant", "content": bot_response})
 
 def main():
     chat()
