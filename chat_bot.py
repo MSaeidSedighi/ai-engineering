@@ -18,7 +18,7 @@ def bot(message, memory=[]):
     )
 
     try: 
-        return response.choices[0].message.content
+        return response.choices[0].message.content, response.usage.total_tokens
     except:
         print("bot message failed. retrying...")
         bot(message, memory)
@@ -26,15 +26,18 @@ def bot(message, memory=[]):
 def chat(system_prompt):
     memory = [{'role': 'system', 'content': system_prompt}]
     print("Welcome to the chat bot! Type 'q' to terminate the chat.")
+    total_tokens = 0
     while True:
         user_input = input("Enter your message: ").strip().lower()
 
         if user_input == "q":
+            print(f"Total tokens used: {total_tokens}")
             print("Terminating the chat bot. Goodbye!")
             break
 
-        bot_response = bot(user_input, memory)
+        bot_response, token_count = bot(user_input, memory)
         print(bot_response)
+        total_tokens += token_count
         memory.append({"role": "user", "content": user_input})
         memory.append({"role": "assistant", "content": bot_response})
 
