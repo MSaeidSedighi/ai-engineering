@@ -4,46 +4,50 @@ from openai import OpenAI
 
 dotenv.load_dotenv()
 
-llm = OpenAI(
-    api_key=os.getenv("API_KEY"),
-    base_url="http://localhost:20128/v1"
-)
+class ChatBot:
+    def __init__(self, system_prompt):
+        self.llm = OpenAI(
+                    api_key=os.getenv("API_KEY"),
+                    base_url="http://localhost:20128/v1"
+                    )
+        self.system_prompt = system_prompt
 
-def bot(message, memory=[]):
-    response = llm.chat.completions.create(
-        model="ai-engineering",
-        messages=memory + [{"role": "user", "content": message}],
-        temperature=0.7,
-        max_tokens=2000
-    )
+    def callModel(self, message, memory=[]):
+        response = self.llm.chat.completions.create(
+            model="ai-engineering",
+            messages=memory + [{"role": "user", "content": message}],
+            temperature=0.7,
+            max_tokens=2000
+        )
 
-    try: 
-        return response.choices[0].message.content, response.usage.total_tokens
-    except:
-        print("bot message failed. retrying...")
-        bot(message, memory)
+        try: 
+            return response.choices[0].message.content, response.usage.total_tokens
+        except:
+            print("bot message failed. retrying...")
+            self.callModel(message, memory)
 
-def chat(system_prompt):
-    memory = [{'role': 'system', 'content': system_prompt}]
-    print("Welcome to the chat bot! Type 'q' to terminate the chat.")
-    total_tokens = 0
-    while True:
-        user_input = input("Enter your message: ").strip().lower()
+    def chat(self):
+        memory = [{'role': 'system', 'content': self.system_prompt}]
+        print("Welcome to the chat bot! Type 'q' to terminate the chat.")
+        total_tokens = 0
+        while True:
+            user_input = input("Enter your message: ").strip().lower()
 
-        if user_input == "q":
-            print(f"Total tokens used: {total_tokens}")
-            print("Terminating the chat bot. Goodbye!")
-            break
+            if user_input == "q":
+                print(f"Total tokens used: {total_tokens}")
+                print("Terminating the chat bot. Goodbye!")
+                break
 
-        bot_response, token_count = bot(user_input, memory)
-        print(bot_response)
-        total_tokens += token_count
-        memory.append({"role": "user", "content": user_input})
-        memory.append({"role": "assistant", "content": bot_response})
+            bot_response, token_count = self.callModel(user_input, memory)
+            print(bot_response)
+            total_tokens += token_count
+            memory.append({"role": "user", "content": user_input})
+            memory.append({"role": "assistant", "content": bot_response})
 
 def main():
     system_prompt = "You are a helpful assistant. Your name is Abbas. Give short and concise answers. If you don't know the answer, say 'I don't know'."
-    chat(system_prompt)
+    chat_bot = ChatBot(system_prompt)
+    chat_bot.chat()
 
 if __name__ == "__main__":
     main()
