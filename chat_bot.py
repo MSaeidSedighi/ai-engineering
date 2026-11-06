@@ -1,3 +1,5 @@
+from time import sleep
+
 import dotenv
 import os
 from openai import OpenAI
@@ -6,6 +8,7 @@ import tiktoken
 MAX_PROMPT_TOKENS = 100
 MAX_OUTPUT_TOKENS = 2000
 TEMPERATURE = 0.7
+TOKEN_PRINT_INTERVAL = 0.1
 
 dotenv.load_dotenv()
 
@@ -22,14 +25,26 @@ class ChatBot:
             model="gpt-5.6-terra",
             messages=memory + [{"role": "user", "content": message}],
             temperature=TEMPERATURE,
-            max_tokens=MAX_OUTPUT_TOKENS
+            max_tokens=MAX_OUTPUT_TOKENS,
+            stream=True
         )
 
-        try: 
-            return response.choices[0].message.content, response.usage.total_tokens
-        except:
-            print("bot message failed. retrying...")
-            self.callModel(message, memory)
+        response_text = ""
+        for chunk in response:
+            if chunk.choices:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    print(delta, end="", flush=True)
+                    response_text += delta
+                    sleep(TOKEN_PRINT_INTERVAL)
+
+            if chunk.usage:
+                token_count = chunk.usage.total_tokens
+
+        print()
+
+        return response_text, token_count
+
 
     def chat(self):
         encoding = tiktoken.encoding_for_model("gpt-5.6-terra")
@@ -50,7 +65,7 @@ class ChatBot:
                 break
 
             bot_response, token_count = self.callModel(user_input, memory)
-            print(bot_response)
+            # print(bot_response)
             total_tokens += token_count
             memory.append({"role": "user", "content": user_input})
             memory.append({"role": "assistant", "content": bot_response})
