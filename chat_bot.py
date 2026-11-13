@@ -9,6 +9,7 @@ MAX_PROMPT_TOKENS = 100
 MAX_OUTPUT_TOKENS = 2000
 TEMPERATURE = 0.7
 TOKEN_PRINT_INTERVAL = 0.1
+HISTORY_COMPACTING_THRESHOLD = 3
 
 dotenv.load_dotenv()
 
@@ -19,6 +20,7 @@ class ChatBot:
                     base_url="https://api.gapgpt.app/v1"
                     )
         self.system_prompt = system_prompt
+        self.iteration = 0
 
     def callModel(self, message, memory=[]):
         response = self.llm.chat.completions.create(
@@ -53,6 +55,11 @@ class ChatBot:
         print("Welcome to the chat bot! Type 'q' to terminate the chat.")
         total_tokens = 0
         while True:
+            self.iteration += 1
+
+            if self.iteration > HISTORY_COMPACTING_THRESHOLD:
+                memory = self.summerize_chat_history(memory)
+
             user_input = input("Enter your message: ").strip().lower()
 
             if len(encoding.encode(user_input)) > MAX_PROMPT_TOKENS:
@@ -69,6 +76,23 @@ class ChatBot:
             total_tokens += token_count
             memory.append({"role": "user", "content": user_input})
             memory.append({"role": "assistant", "content": bot_response})
+
+    def summerize_chat_history(self, memory):
+        print("Compacting memory to reduce token usage...")
+        result = self.llm.chat.completions.create(
+                    model="gpt-5.6-terra",
+                    messages=[
+                        {"role": "system", "content": f"Compact and summarize this memory: {str(memory[1:])}"}
+                    ],
+                    temperature=TEMPERATURE,
+                    max_tokens=MAX_OUTPUT_TOKENS
+                )
+
+        result_text = result.choices[0].message.content
+        memory = [{'role': 'system', 'content': self.system_prompt}, {'role': 'assistant', 'content': result_text}]
+        self.iteration = 0
+        print("Memory compacted. Continuing the chat...")
+        return memory
 
 def main():
     system_prompt = "You are a helpful assistant. Your name is Abbas. Give short and concise answers. If you don't know the answer, say 'I don't know'."
