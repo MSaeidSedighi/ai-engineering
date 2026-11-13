@@ -10,6 +10,7 @@ MAX_OUTPUT_TOKENS = 2000
 TEMPERATURE = 0.7
 TOKEN_PRINT_INTERVAL = 0.1
 HISTORY_COMPACTING_THRESHOLD = 3
+MAX_OUTPUT_TOKENS_SUMMERIZATION = 250
 
 dotenv.load_dotenv()
 
@@ -85,7 +86,7 @@ class ChatBot:
                         {"role": "system", "content": f"Compact and summarize this memory: {str(memory[1:])}"}
                     ],
                     temperature=TEMPERATURE,
-                    max_tokens=MAX_OUTPUT_TOKENS
+                    max_tokens=MAX_OUTPUT_TOKENS_SUMMERIZATION
                 )
 
         result_text = result.choices[0].message.content
