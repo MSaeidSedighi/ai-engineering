@@ -5,15 +5,6 @@ from sentence_transformers import SentenceTransformer, util
 
 model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
-def find_closest(query, sentences):
-    query_embedding = model.encode(query)
-    sentence_embeddings = model.encode(sentences)
-
-    cosine_scores = util.cos_sim(query_embedding, sentence_embeddings)
-
-    closest_idx = cosine_scores.argmax().item()
-    return sentences[closest_idx]
-
 def main():
 
     sentences = [
@@ -25,8 +16,13 @@ def main():
 
     query = "I love cats"
 
-    closest = find_closest(query, sentences)
-    print(closest)
+    query_embedding = model.encode(query)
+    sentence_embeddings = model.encode(sentences)
+
+    results = util.semantic_search(query_embedding, sentence_embeddings, top_k=2)
+
+    for result in results[0]:
+        print(sentences[int(result['corpus_id'])])
 
 if __name__ == "__main__":
     main()
