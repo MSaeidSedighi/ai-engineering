@@ -4,6 +4,42 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 import hashlib
+import dotenv
+import os
+from openai import OpenAI
+
+dotenv.load_dotenv()
+client = OpenAI(
+            api_key=os.getenv("API_KEY"),
+            base_url="https://api.gapgpt.app/v1"
+            )
+
+def llm(query, context):
+
+    system_prompt = f"""You are a medical information assistant. Answer the user's question using ONLY
+    the provided source documents below.
+
+      Rules you must follow:
+      1. Base your answer ONLY on the provided sources — do not use outside knowledge
+      2. If the sources don't contain enough information to answer, say exactly: "I don't have enough information to answer
+      this question."
+      3. Cite sources using [Source N] notation whenever you use information from them
+      4. If sources contradict each other, mention the contradiction
+      5. Be concise — answer in 3-5 sentences unless the question requires more detail
+      6. Never speculate or make assumptions beyond what the sources say
+
+      Sources:
+      {context}"""
+
+    response = client.chat.completions.create(
+        model="gpt-5.6-terra",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Question: {query}"}
+        ],
+        temperature=0.5,
+    )
+    return response.choices[0].message.content.strip()
 
 
 model = HuggingFaceEmbeddings(
@@ -42,13 +78,23 @@ def main():
 
         results = vectorstore.similarity_search_with_score(user_input, k=3)
 
-        print("Top 3 results:")
+        parts = []
+
         for i, (doc, score) in enumerate(results):
-            print(f"Result {i+1}:")
-            print(f"Score: {score}")
-            print(f"Content: {doc.page_content}")
-            print(f"Source: {doc.metadata['source']}, Page: {doc.metadata['page']}")
-            print("------------------------------")
+            parts.append(f"[Source {i+1}] | Page {doc.metadata.get('page')} | cosine similarity {score: .2f}: {doc.page_content}")
+
+        context = "\n\n_____\n\n".join(parts)
+        answer = llm(user_input, context)
+
+        print(answer)
+
+        # print("Top 3 results:")
+        # for i, (doc, score) in enumerate(results):
+        #     print(f"Result {i+1}:")
+        #     print(f"Score: {score}")
+        #     print(f"Content: {doc.page_content}")
+        #     print(f"Source: {doc.metadata['source']}, Page: {doc.metadata['page']}")
+        #     print("------------------------------")
 
 if __name__ == "__main__":
     main()
