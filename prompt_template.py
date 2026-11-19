@@ -2,7 +2,7 @@ import os
 import dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 dotenv.load_dotenv()
 
@@ -16,9 +16,16 @@ class Agent:
                     )
 
     def chat(self):
+        history = [
+            HumanMessage('Hello, how are you?'),
+            AIMessage('>>Bonjour, comment allez-vous ?<<'),
+            HumanMessage('I love you!'),
+            AIMessage('>>Je t\'aime !<<'),
+        ]
         prompt = ChatPromptTemplate.from_messages(
            [
                ('system', 'You are a translator from {origin} to {target}.'),
+               MessagesPlaceholder(variable_name='history_variable'),
                ('human', '{input}'),
            ]
         )
@@ -28,10 +35,11 @@ class Agent:
         response = chain.invoke({
             'origin': 'English',
             'target': 'French',
-            'input': 'Hello, how are you?'
+            'input': 'I hate you!',
+            'history_variable': history
         })
 
-        print(response)
+        print(response.content)
 
     
 
