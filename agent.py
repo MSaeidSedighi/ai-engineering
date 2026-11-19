@@ -1,8 +1,20 @@
 import dotenv
 import langchain_openai
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
+from langchain.agents import create_agent
 
 dotenv.load_dotenv()
+
+def get_weather(city):
+    '''
+    get weather information of a city.
+    Args:
+        city (str): The name of the city to get weather information for.
+    Returns:
+        dict: A dictionary containing the weather information for the specified city.
+    '''
+
+    return {'city': city, 'temperature': '25°C', 'condition': 'Sunny'}
 
 class Agent:
     def __init__(self):
@@ -13,8 +25,10 @@ class Agent:
                         temperature=0.7,
                     )
         self.messages = [
-            SystemMessage(content="Give Short Answers."),
+            SystemMessage("Answer the given questions, and use provided tools whenever needed."),
             ]
+
+        self.agent = create_agent(model=self.llm, tools=[get_weather])
 
     def chat_loop(self):
         while True:
@@ -23,11 +37,11 @@ class Agent:
                 print("Exiting chat.")
                 break
 
-            self.messages.append(HumanMessage(content=user_input))
-            response = self.llm.invoke(self.messages)
-            self.messages.append(AIMessage(content=response.content))
+            self.messages.append(HumanMessage(user_input))
+            response = self.agent.invoke({"messages": self.messages})
+            self.messages.append(AIMessage(response['messages'][-1].content))
 
-            print(f"AI: {response.content}")
+            print(response['messages'][-1].content)
 
 def main():
     agent = Agent()
