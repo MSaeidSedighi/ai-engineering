@@ -3,6 +3,11 @@ import langchain_openai
 from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
+from langchain.agents.middleware import before_model, SummarizationMiddleware
+
+@before_model
+def log_before_model(state, runtime):
+    print("before_model")
 
 dotenv.load_dotenv()
 
@@ -14,7 +19,18 @@ class Agent:
                         api_key=dotenv.get_key(dotenv.find_dotenv(), "API_KEY"),
                         temperature=0.7,
                     )
-        self.agent = create_agent(model=self.llm, tools=[], system_prompt="Answer questions concisely.", checkpointer=InMemorySaver())
+        self.agent = create_agent(model=self.llm,
+                                  tools=[],
+                                  system_prompt="Answer questions concisely.",
+                                  checkpointer=InMemorySaver(),
+                                  middleware=[log_before_model, SummarizationMiddleware(
+                                      max_tokens=1000,
+                                      model=self.llm,
+                                      max_tokens_before_summary=500,
+                                      summary_prompt="Summarize the conversation so far in a concise manner.",
+                                      messages_to_keep=5
+                                      )]
+                                  )
 
     def chat_loop(self):
         active_session = 'session_1'
